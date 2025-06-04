@@ -1,39 +1,29 @@
-"""Entry point for running the FastAPI application and Telegram bots."""
-
+"""# run.py
+FastAPI application startup."""
 import asyncio
-
 from fastapi import FastAPI
 import uvicorn
 
+from api.router import router
+from middlewares.rate_limit import FastAPIRateLimitMiddleware
 from config import get_settings
 
-# Placeholder imports for bots
-# from bot.client_bot.main import start_bot as start_client_bot
-# from bot.employee_bot.main import start_bot as start_employee_bot
-# from bot.admin_bot.main import start_bot as start_admin_bot
-
 app = FastAPI(title="Doner HUB")
+app.add_middleware(FastAPIRateLimitMiddleware)
+app.include_router(router)
 
 
 @app.get("/")
-async def read_root():
+async def read_root() -> dict[str, str]:
     return {"status": "ok"}
 
 
-def start_api():
-    """Run FastAPI application using uvicorn."""
+def start_api() -> None:
     settings = get_settings()
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("run:app", host="0.0.0.0", port=8000, reload=False)
 
 
-async def main():
-    """Run API and bots concurrently."""
-    # await asyncio.gather(
-    #     start_client_bot(),
-    #     start_employee_bot(),
-    #     start_admin_bot(),
-    #     start_api(),
-    # )
+async def main() -> None:
     start_api()
 
 

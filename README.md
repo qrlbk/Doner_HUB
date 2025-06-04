@@ -1,25 +1,29 @@
 # Doner HUB
 
-This project contains a FastAPI backend and several Telegram bots built with aiogram.
+FastAPI backend and Telegram bots for food ordering.
 
-## Installation
-
-1. Copy `.env.example` to `.env` and adjust values.
-2. Build and start services with Docker Compose:
+## Quick start
 
 ```bash
+git clone <repo-url>
+cd Doner_HUB
+cp .env.example .env
 docker compose up -d
 ```
 
-This will launch PostgreSQL, Redis, the FastAPI application and placeholder bot container.
-
-## Local Development
-
-Ensure dependencies are installed and run:
+Run database migrations:
 
 ```bash
-python run.py
+alembic -c database/alembic.ini upgrade head
 ```
 
-Bots can be started similarly from their respective `main.py` files.
+Run tests and linters:
 
+```bash
+pytest --cov
+pre-commit run --all-files
+```
+
+Optionally load test with [k6](https://k6.io).
+
+Database schema diagram available at [dbdiagram.io](https://dbdiagram.io).
