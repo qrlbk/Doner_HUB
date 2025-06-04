@@ -2,38 +2,57 @@
 
 import asyncio
 
-from fastapi import FastAPI
 import uvicorn
+from fastapi import FastAPI
+from pydantic import BaseModel
 
-from config import get_settings
-
-# Placeholder imports for bots
-# from bot.client_bot.main import start_bot as start_client_bot
-# from bot.employee_bot.main import start_bot as start_employee_bot
-# from bot.admin_bot.main import start_bot as start_admin_bot
+from middlewares.rate_limit import RateLimitMiddleware
+from services import inventory_service, order_service
 
 app = FastAPI(title="Doner HUB")
+rate_limiter = RateLimitMiddleware(app, max_requests=10, window=10)
+app.add_middleware(RateLimitMiddleware, max_requests=10, window=10)
+
+
+class OrderItem(BaseModel):
+    dish_id: int
+    qty: int
+    price: float
+
+
+class OrderCreate(BaseModel):
+    user_id: int
+    items: list[OrderItem]
 
 
 @app.get("/")
-async def read_root():
+async def read_root() -> dict:
     return {"status": "ok"}
 
 
-def start_api():
+@app.get("/health")
+async def health() -> dict:
+    """Healthcheck endpoint."""
+    return {"status": "ok"}
+
+
+@app.post("/orders", status_code=201)
+async def create_order(payload: OrderCreate) -> dict:
+    order_id = await order_service.create_order(
+        payload.user_id,
+        [item.dict() for item in payload.items],
+    )
+    await inventory_service.apply_stock_moves(order_id)
+    return {"order_id": order_id}
+
+
+def start_api() -> None:
     """Run FastAPI application using uvicorn."""
-    settings = get_settings()
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 
-async def main():
-    """Run API and bots concurrently."""
-    # await asyncio.gather(
-    #     start_client_bot(),
-    #     start_employee_bot(),
-    #     start_admin_bot(),
-    #     start_api(),
-    # )
+async def main() -> None:
+    """Run API (bots stubs are commented)."""
     start_api()
 
 

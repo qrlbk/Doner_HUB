@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          pip install -r requirements.txt
+          pip install pre-commit
+      - name: Lint
+        run: pre-commit run --all-files --show-diff-on-failure --color always
+      - name: Pytest
+        run: pytest
+      - name: Set tag
+        id: tag
+        run: |
+          if [[ "$GITHUB_REF" == 'refs/heads/main' ]]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          else
+            echo "tag=prod" >> $GITHUB_OUTPUT
+          fi
+      - name: Docker build
+        run: docker build -t ghcr.io/qrlbk/doner_hub:${{ steps.tag.outputs.tag }} .
+      - name: Docker push
+        run: docker push ghcr.io/qrlbk/doner_hub:${{ steps.tag.outputs.tag }}
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCKER_BUILDKIT: 1
